@@ -435,7 +435,7 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-black">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">VerifAI System Management</p>
+                <p className="text-sm text-gray-600">VisioMark System Management</p>
               </div>
             </div>
 

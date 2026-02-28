@@ -52,10 +52,10 @@ const Login = () => {
             <Shield className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            VerifAI
+            VisioMark
           </h1>
           <p className="text-muted-foreground">
-            AI-Powered Attendance System
+            Machine Learning-Based Facial Recognition Attendance System
           </p>
         </div>
 
@@ -116,6 +116,7 @@ const Login = () => {
         {/* Footer */}
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Secure biometric attendance tracking</p>
+          <p className="mt-2">VisioMark © 2026 | All Rights Reserved</p>
         </div>
       </div>
     </div>
