@@ -2,16 +2,16 @@ import express from 'express';
 import {
   createUser,
   getUsers,
-  updateUser,
   deleteUser,
+  updateUser,        // ✅ ADD THIS
   createStudent,
   getStudents,
-  updateStudent,
   deleteStudent,
+  updateStudent,     // ✅ ADD THIS
   createCourse,
   getCourses,
-  updateCourse,
   deleteCourse,
+  updateCourse,      // ✅ ADD THIS
   createEnrollment,
   getEnrollments,
   deleteEnrollment,
@@ -22,33 +22,30 @@ import { ROLES } from '../config/constants.js';
 
 const router = express.Router();
 
-// All admin routes require ADMIN role
-router.use(authMiddleware, roleMiddleware(ROLES.ADMIN));
+// User routes
+router.post('/users', authMiddleware, roleMiddleware(ROLES.ADMIN), createUser);
+router.get('/users', authMiddleware, roleMiddleware(ROLES.ADMIN), getUsers);
+router.put('/users/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), updateUser); // ✅ NEW
+router.delete('/users/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), deleteUser);
 
-// User management
-router.post('/users', createUser);
-router.get('/users', getUsers);
-router.put('/users/:id', updateUser);
-router.delete('/users/:id', deleteUser);
+// Student routes
+router.post('/students', authMiddleware, roleMiddleware(ROLES.ADMIN), createStudent);
+router.get('/students', authMiddleware, roleMiddleware(ROLES.ADMIN), getStudents);
+router.put('/students/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), updateStudent); // ✅ NEW
+router.delete('/students/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), deleteStudent);
 
-// Student management
-router.post('/students', createStudent);
-router.get('/students', getStudents);
-router.put('/students/:id', updateStudent);
-router.delete('/students/:id', deleteStudent);
+// Course routes
+router.post('/courses', authMiddleware, roleMiddleware(ROLES.ADMIN), createCourse);
+router.get('/courses', authMiddleware, roleMiddleware(ROLES.ADMIN), getCourses);
+router.put('/courses/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), updateCourse); // ✅ NEW
+router.delete('/courses/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), deleteCourse);
 
-// Course management
-router.post('/courses', createCourse);
-router.get('/courses', getCourses);
-router.put('/courses/:id', updateCourse);
-router.delete('/courses/:id', deleteCourse);
+// Enrollment routes
+router.post('/enrollments', authMiddleware, roleMiddleware(ROLES.ADMIN), createEnrollment);
+router.get('/enrollments', authMiddleware, roleMiddleware(ROLES.ADMIN), getEnrollments);
+router.delete('/enrollments/:id', authMiddleware, roleMiddleware(ROLES.ADMIN), deleteEnrollment);
 
-// Enrollment management
-router.post('/enrollments', createEnrollment);
-router.get('/enrollments', getEnrollments);
-router.delete('/enrollments/:id', deleteEnrollment);
-
-// Face registration for students
-router.post('/face/register', registerStudentFace);
+// Face registration
+router.post('/face/register', authMiddleware, registerStudentFace);
 
 export default router;

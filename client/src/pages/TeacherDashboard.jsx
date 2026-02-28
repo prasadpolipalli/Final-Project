@@ -9,13 +9,16 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import api from '../services/api';
+import { exportToPDF, exportToExcel } from '../utils/exportReports';
 import {
   BookOpen,
   LogOut,
   Users,
   Calendar,
   Video,
-  BarChart3
+  BarChart3,
+  Download,
+  FileText
 } from "lucide-react";
 
 const TeacherDashboard = () => {
@@ -31,9 +34,12 @@ const TeacherDashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetails, setSessionDetails] = useState(null);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [activeSessions, setActiveSessions] = useState(0);
+  const [avgAttendance, setAvgAttendance] = useState('--');
 
   useEffect(() => {
     fetchCourses();
+    fetchActiveSessions();
   }, []);
 
   const fetchCourses = async () => {
@@ -47,6 +53,57 @@ const TeacherDashboard = () => {
       toast.error('Failed to fetch courses');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ FIXED: Fetch all sessions for all courses
+  const fetchActiveSessions = async () => {
+    try {
+      const response = await api.get('/teacher/courses');
+      const myCourses = response.data.courses || [];
+      
+      let totalSessions = 0;
+      let totalAttendance = 0;
+      let sessionCount = 0;
+
+      console.log('[TeacherDashboard] Fetching sessions for', myCourses.length, 'courses');
+
+      // Fetch sessions for each course
+      for (const course of myCourses) {
+        try {
+          const sessionsResponse = await api.get(`/attendance/course/${course._id}/sessions`);
+          const sessions = sessionsResponse.data.sessions || [];
+          
+          console.log(`[TeacherDashboard] Course ${course.code} has ${sessions.length} sessions`);
+          
+          // Count ALL sessions (both ACTIVE and CLOSED)
+          totalSessions += sessions.length;
+
+          // Calculate average attendance
+          sessions.forEach(s => {
+            totalAttendance += parseFloat(s.attendancePercentage) || 0;
+            sessionCount++;
+          });
+        } catch (error) {
+          console.error(`Error fetching sessions for course ${course._id}:`, error);
+        }
+      }
+
+      console.log('[TeacherDashboard] Total sessions:', totalSessions);
+      console.log('[TeacherDashboard] Average attendance calculation - Total:', totalAttendance, 'Count:', sessionCount);
+
+      setActiveSessions(totalSessions);
+      
+      // Calculate and set average attendance
+      if (sessionCount > 0) {
+        const avgAtt = (totalAttendance / sessionCount).toFixed(1);
+        console.log('[TeacherDashboard] Setting avg attendance to:', avgAtt);
+        setAvgAttendance(avgAtt);
+      } else {
+        setAvgAttendance('--');
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
     }
   };
 
@@ -132,6 +189,32 @@ const TeacherDashboard = () => {
     setSessionDetails(null);
   };
 
+  const handleExportPDF = () => {
+    if (!sessionDetails || !selectedCourse) {
+      toast.error('No session data to export');
+      return;
+    }
+    const result = exportToPDF(sessionDetails, selectedCourse);
+    if (result.success) {
+      toast.success('✅ PDF exported successfully!');
+    } else {
+      toast.error('❌ Failed to export PDF: ' + result.error);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!sessionDetails || !selectedCourse) {
+      toast.error('No session data to export');
+      return;
+    }
+    const result = exportToExcel(sessionDetails, selectedCourse);
+    if (result.success) {
+      toast.success('✅ Excel exported successfully!');
+    } else {
+      toast.error('❌ Failed to export Excel: ' + result.error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -191,8 +274,8 @@ const TeacherDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600">Active Sessions</p>
-                  <h3 className="text-2xl font-bold text-black">0</h3>
+                  <p className="text-sm font-medium text-gray-600">Total Sessions</p>
+                  <h3 className="text-2xl font-bold text-black">{activeSessions}</h3>
                 </div>
                 <div className="p-3 rounded-lg border border-gray-200 bg-white">
                   <Video className="w-5 h-5 text-black" />
@@ -206,7 +289,7 @@ const TeacherDashboard = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-600">Avg Attendance</p>
-                  <h3 className="text-2xl font-bold text-black">--</h3>
+                  <h3 className="text-2xl font-bold text-black">{avgAttendance}%</h3>
                 </div>
                 <div className="p-3 rounded-lg border border-gray-200 bg-white">
                   <BarChart3 className="w-5 h-5 text-black" />
@@ -422,6 +505,25 @@ const TeacherDashboard = () => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Export Buttons */}
+                  <div className="flex gap-3 mb-6">
+                    <Button 
+                      onClick={handleExportPDF}
+                      className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+                    >
+                      <FileText size={18} />
+                      📄 Export to PDF
+                    </Button>
+                    
+                    <Button 
+                      onClick={handleExportExcel}
+                      className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                    >
+                      <Download size={18} />
+                      📊 Export to Excel
+                    </Button>
+                  </div>
 
                   {/* Students Table */}
                   <Card className="border-gray-200">

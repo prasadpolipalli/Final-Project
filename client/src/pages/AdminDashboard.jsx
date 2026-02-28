@@ -53,6 +53,12 @@ const AdminDashboard = () => {
   const [courseForm, setCourseForm] = useState({ code: '', name: '', department: '', year: 1, section: '', teacherId: '' });
   const [enrollmentForm, setEnrollmentForm] = useState({ studentId: '', courseId: '' });
   
+  // ✅ NEW: Edit states
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editUserForm, setEditUserForm] = useState({ name: '', email: '', role: 'STUDENT' });
+  const [editCourseForm, setEditCourseForm] = useState({ code: '', name: '', department: '', year: 1, section: '', teacherId: '' });
+  
   // Face capture states
   const [showFaceCapture, setShowFaceCapture] = useState(false);
   const [faceEmbedding, setFaceEmbedding] = useState(null);
@@ -167,7 +173,6 @@ const AdminDashboard = () => {
     setShowFaceCapture(true);
     setCapturingFace(true);
     
-    // Wait for modal to render
     await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
@@ -183,7 +188,6 @@ const AdminDashboard = () => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Wait for video to be ready
         videoRef.current.onloadedmetadata = () => {
           console.log('[AdminDashboard] Video metadata loaded, playing video...');
           videoRef.current.play();
@@ -232,7 +236,6 @@ const AdminDashboard = () => {
       const embedding = Array.from(detections.descriptor);
       console.log('[AdminDashboard] Face embedding created, length:', embedding.length);
       
-      // If editing existing user, update their face immediately
       if (editingUser) {
         console.log('[AdminDashboard] Updating face for existing user:', editingUser.email);
         try {
@@ -249,12 +252,10 @@ const AdminDashboard = () => {
         setEditingUser(null);
       } else {
         console.log('[AdminDashboard] Storing embedding for new user creation');
-        // For new user creation, store embedding
         setFaceEmbedding(embedding);
         toast.success('Face captured successfully!');
       }
       
-      // Stop video stream
       if (videoRef.current.srcObject) {
         console.log('[AdminDashboard] Stopping video stream...');
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
@@ -285,7 +286,6 @@ const AdminDashboard = () => {
     console.log('[AdminDashboard] Student form data:', studentForm);
     console.log('[AdminDashboard] Face embedding exists:', !!faceEmbedding);
     
-    // Validate face capture for students
     if (userForm.role === 'STUDENT' && !faceEmbedding) {
       console.error('[AdminDashboard] Student creation blocked: No face embedding');
       toast.error('Please capture student face before creating account');
@@ -305,7 +305,6 @@ const AdminDashboard = () => {
       const createdUser = response.data.user;
       console.log('[AdminDashboard] User created successfully:', createdUser);
       
-      // Register face for student
       if (userForm.role === 'STUDENT' && faceEmbedding) {
         console.log('[AdminDashboard] Registering face for student, userId:', createdUser.id);
         try {
@@ -336,6 +335,77 @@ const AdminDashboard = () => {
       setLoading(false);
       console.log('[AdminDashboard] handleCreateUser completed');
     }
+  };
+
+  // ✅ NEW: Handle edit user
+  const handleEditUser = (user) => {
+    setEditingUserId(user._id);
+    setEditUserForm({
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
+  };
+
+  // ✅ NEW: Save edited user
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    if (!editingUserId) return;
+    
+    setLoading(true);
+    try {
+      console.log('[AdminDashboard] Updating user:', editingUserId);
+      await api.put(`/admin/users/${editingUserId}`, editUserForm);
+      toast.success('✅ User updated successfully');
+      setEditingUserId(null);
+      setEditUserForm({ name: '', email: '', role: 'STUDENT' });
+      fetchUsers();
+    } catch (error) {
+      console.error('[AdminDashboard] Error updating user:', error);
+      toast.error(error.response?.data?.error || 'Failed to update user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Handle edit course
+  const handleEditCourse = (course) => {
+    setEditingCourseId(course._id);
+    setEditCourseForm({
+      code: course.code,
+      name: course.name,
+      department: course.department,
+      year: course.year,
+      section: course.section,
+      teacherId: course.teacherId || ''
+    });
+  };
+
+  // ✅ NEW: Save edited course
+  const handleSaveCourse = async (e) => {
+    e.preventDefault();
+    if (!editingCourseId) return;
+    
+    setLoading(true);
+    try {
+      console.log('[AdminDashboard] Updating course:', editingCourseId);
+      await api.put(`/admin/courses/${editingCourseId}`, editCourseForm);
+      toast.success('✅ Course updated successfully');
+      setEditingCourseId(null);
+      setEditCourseForm({ code: '', name: '', department: '', year: 1, section: '', teacherId: '' });
+      fetchCourses();
+    } catch (error) {
+      console.error('[AdminDashboard] Error updating course:', error);
+      toast.error(error.response?.data?.error || 'Failed to update course');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Cancel edit
+  const handleCancelEdit = () => {
+    setEditingUserId(null);
+    setEditingCourseId(null);
   };
 
   const handleCreateCourse = async (e) => {
@@ -725,6 +795,87 @@ const AdminDashboard = () => {
                   </Card>
                 )}
 
+                {/* ✅ EDIT USER MODAL */}
+                {editingUserId && (
+                  <Card className="border-2 border-blue-300 bg-blue-50 mt-6">
+                    <CardHeader className="bg-blue-100">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-black">✏️ Edit User</CardTitle>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={handleCancelEdit}
+                          className="hover:bg-blue-200"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <form onSubmit={handleSaveUser} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-name" className="text-black font-semibold">Full Name</Label>
+                            <Input
+                              id="edit-name"
+                              value={editUserForm.name}
+                              onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })}
+                              placeholder="Enter full name"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-email" className="text-black font-semibold">Email</Label>
+                            <Input
+                              id="edit-email"
+                              type="email"
+                              value={editUserForm.email}
+                              onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
+                              placeholder="email@example.com"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-role" className="text-black font-semibold">Role</Label>
+                            <Select 
+                              value={editUserForm.role}
+                              onValueChange={(value) => setEditUserForm({ ...editUserForm, role: value })}
+                            >
+                              <SelectTrigger className="border-gray-300">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="STUDENT">Student</SelectItem>
+                                <SelectItem value="TEACHER">Teacher</SelectItem>
+                                <SelectItem value="ADMIN">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                          <Button 
+                            type="submit" 
+                            disabled={loading}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {loading ? '⏳ Saving...' : '💾 Save Changes'}
+                          </Button>
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            className="border-gray-300"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Users List */}
                 {loading ? (
                   <div className="space-y-3">
@@ -765,6 +916,17 @@ const AdminDashboard = () => {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
+                                  {/* ✅ EDIT BUTTON */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditUser(user)}
+                                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                    title="Edit user"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  
                                   {user.role === 'STUDENT' && (
                                     <Button
                                       variant="ghost"
@@ -783,7 +945,7 @@ const AdminDashboard = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleDeleteUser(user._id)}
-                                    className="text-gray-600 hover:text-black hover:bg-gray-100"
+                                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
@@ -943,6 +1105,115 @@ const AdminDashboard = () => {
                   </Card>
                 )}
 
+                {/* ✅ EDIT COURSE MODAL */}
+                {editingCourseId && (
+                  <Card className="border-2 border-blue-300 bg-blue-50 mt-6">
+                    <CardHeader className="bg-blue-100">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-black">✏️ Edit Course</CardTitle>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={handleCancelEdit}
+                          className="hover:bg-blue-200"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <form onSubmit={handleSaveCourse} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-code" className="text-black font-semibold">Course Code</Label>
+                            <Input
+                              id="edit-code"
+                              value={editCourseForm.code}
+                              onChange={(e) => setEditCourseForm({ ...editCourseForm, code: e.target.value })}
+                              placeholder="e.g., CS101"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-cname" className="text-black font-semibold">Course Name</Label>
+                            <Input
+                              id="edit-cname"
+                              value={editCourseForm.name}
+                              onChange={(e) => setEditCourseForm({ ...editCourseForm, name: e.target.value })}
+                              placeholder="e.g., Data Structures"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-dept" className="text-black font-semibold">Department</Label>
+                            <Input
+                              id="edit-dept"
+                              value={editCourseForm.department}
+                              onChange={(e) => setEditCourseForm({ ...editCourseForm, department: e.target.value })}
+                              placeholder="e.g., IT"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-year" className="text-black font-semibold">Year</Label>
+                            <Input
+                              id="edit-year"
+                              type="number"
+                              value={editCourseForm.year}
+                              onChange={(e) => setEditCourseForm({ ...editCourseForm, year: parseInt(e.target.value) })}
+                              min="1"
+                              max="4"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-sec" className="text-black font-semibold">Section</Label>
+                            <Input
+                              id="edit-sec"
+                              value={editCourseForm.section}
+                              onChange={(e) => setEditCourseForm({ ...editCourseForm, section: e.target.value })}
+                              placeholder="e.g., A"
+                              required
+                              className="border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-teacher" className="text-black font-semibold">Teacher ID</Label>
+                            <Input
+                              id="edit-teacher"
+                              value={editCourseForm.teacherId}
+                              onChange={(e) => setEditCourseForm({ ...editCourseForm, teacherId: e.target.value })}
+                              placeholder="Leave empty if unassigned"
+                              className="border-gray-300"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                          <Button 
+                            type="submit" 
+                            disabled={loading}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {loading ? '⏳ Saving...' : '💾 Save Changes'}
+                          </Button>
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            className="border-gray-300"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Courses List */}
                 {loading ? (
                   <div className="space-y-3">
@@ -977,14 +1248,27 @@ const AdminDashboard = () => {
                                 </TableCell>
                                 <TableCell className="text-gray-600">{teacher?.name || 'Unassigned'}</TableCell>
                                 <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteCourse(course._id)}
-                                    className="text-gray-600 hover:text-black hover:bg-gray-100"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex items-center justify-end gap-2">
+                                    {/* ✅ EDIT BUTTON */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditCourse(course)}
+                                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                      title="Edit course"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteCourse(course._id)}
+                                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );

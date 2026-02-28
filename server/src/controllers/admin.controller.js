@@ -61,25 +61,31 @@ export const getUsers = async (req, res, next) => {
   }
 };
 
+// ✅ NEW: UPDATE USER
 export const updateUser = async (req, res, next) => {
   try {
-    console.log('[Admin Controller] updateUser called');
+    console.log('[Admin Controller] updateUser called for userId:', req.params.id);
+    console.log('[Admin Controller] Request body:', req.body);
     const { id } = req.params;
-    const updates = req.body;
-    console.log('[Admin Controller] Updating user:', id, 'with updates:', { ...updates, password: updates.password ? '***' : undefined });
+    const { name, email, role } = req.body;
 
-    if (updates.passwordHash) {
-      // Password will be hashed by pre-save hook
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required' });
     }
 
-    const user = await User.findByIdAndUpdate(id, updates, { new: true }).select('-passwordHash');
+    const user = await User.findByIdAndUpdate(
+      id,
+      { name, email, role },
+      { new: true }
+    ).select('-passwordHash');
+
     if (!user) {
       console.error('[Admin Controller] User not found:', id);
       return res.status(404).json({ error: 'User not found' });
     }
 
     console.log('[Admin Controller] User updated successfully:', user._id);
-    res.json({ message: 'User updated', user });
+    res.json({ message: 'User updated successfully', user });
   } catch (error) {
     console.error('[Admin Controller] Error in updateUser:', error);
     next(error);
@@ -164,18 +170,27 @@ export const getStudents = async (req, res, next) => {
   }
 };
 
+// ✅ NEW: UPDATE STUDENT
 export const updateStudent = async (req, res, next) => {
   try {
     console.log('[Admin Controller] updateStudent called for studentId:', req.params.id);
     console.log('[Admin Controller] Request body:', req.body);
     const { id } = req.params;
-    const student = await Student.findByIdAndUpdate(id, req.body, { new: true });
+    const { studentId, department, year, section } = req.body;
+
+    const student = await Student.findByIdAndUpdate(
+      id,
+      { studentId, department, year, section },
+      { new: true }
+    ).populate('userId', 'name email');
+
     if (!student) {
       console.error('[Admin Controller] Student not found:', id);
       return res.status(404).json({ error: 'Student not found' });
     }
+
     console.log('[Admin Controller] Student updated successfully:', student._id);
-    res.json({ message: 'Student updated', student });
+    res.json({ message: 'Student updated successfully', student });
   } catch (error) {
     console.error('[Admin Controller] Error in updateStudent:', error);
     next(error);
@@ -222,18 +237,27 @@ export const getCourses = async (req, res, next) => {
   }
 };
 
+// ✅ NEW: UPDATE COURSE
 export const updateCourse = async (req, res, next) => {
   try {
     console.log('[Admin Controller] updateCourse called for courseId:', req.params.id);
     console.log('[Admin Controller] Request body:', req.body);
     const { id } = req.params;
-    const course = await Course.findByIdAndUpdate(id, req.body, { new: true });
+    const { code, name, department, year, section, teacherId } = req.body;
+
+    const course = await Course.findByIdAndUpdate(
+      id,
+      { code, name, department, year, section, teacherId },
+      { new: true }
+    );
+
     if (!course) {
       console.error('[Admin Controller] Course not found:', id);
       return res.status(404).json({ error: 'Course not found' });
     }
+
     console.log('[Admin Controller] Course updated successfully:', course._id);
-    res.json({ message: 'Course updated', course });
+    res.json({ message: 'Course updated successfully', course });
   } catch (error) {
     console.error('[Admin Controller] Error in updateCourse:', error);
     next(error);
