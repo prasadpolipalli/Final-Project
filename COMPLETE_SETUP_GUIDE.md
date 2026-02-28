@@ -1,14 +1,14 @@
-# 📋 Complete VerifAI Attendance System Setup Guide
+# 📋 Complete VisioMark Attendance System Setup Guide
 
 ## ✅ System Status: FULLY OPERATIONAL
 
-This guide covers the **complete working setup** of the VerifAI Attendance System with AI-powered face recognition.
+This guide covers the **complete working setup** of the VisioMark Attendance System with AI-powered face recognition.
 
 ---
 
 ## 🎯 Project Overview
 
-**VerifAI** is a web-based attendance system using:
+**VisioMark** is a web-based attendance system using:
 - 🔐 AI-powered face recognition with encrypted embeddings
 - 🎯 Role-based access (Admin, Teacher, Student)
 - 📊 Attendance tracking and reporting
@@ -235,7 +235,7 @@ http://localhost:5173
 ## 🔐 Login Credentials
 
 Default admin account:
-- **Email:** admin@verifai.com
+- **Email:** admin@visiomark.in
 - **Password:** admin123
 
 ---
@@ -460,4 +460,5 @@ ISC
 ---
 
 **Last Updated:** February 27, 2026
+
 **Status:** Production Ready ✅
