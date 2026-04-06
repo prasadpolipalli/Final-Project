@@ -55,7 +55,8 @@ const Login = () => {
             VisioMark
           </h1>
           <p className="text-muted-foreground">
-            Machine Learning-Based Facial Recognition Attendance System
+             Automated Facial Recognition Attendance System using
+           Deep Learning
           </p>
         </div>
 

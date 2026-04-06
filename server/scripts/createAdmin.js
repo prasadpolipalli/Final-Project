@@ -19,7 +19,7 @@ const createAdmin = async () => {
 
     await admin.save();
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@verifai.com');
+    console.log('📧 Email: admin@visiomark.com');
     console.log('🔑 Password: admin123');
     
     process.exit(0);
